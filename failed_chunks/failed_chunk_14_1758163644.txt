@@ -1,0 +1,13 @@
+{
+  "blocks": [
+    { "type": "header", "content": "CHAPTER ONE: What does it eat?" },
+    { "type": "paragraph", "content": "Shep said darkly. The innkeeper continued to eye the thing curiously. He leaned closer, stretching out a hand. Everyone edged even farther away from the table." },
+    { "type": "paragraph", "content": "Careful," Carter said. "Its feet are sharp like knives." },
+    { "type": "paragraph", "content": "More like razors," Kote said. His long fingers brushed the thing’s black, featureless body." },
+    { "type": "paragraph", "content": "Don’t go messing with it," the smith’s prentice said." },
+    { "type": "paragraph", "content": "Moving carefully, the innkeeper took one of the long, smooth legs and tried to break it with both hands like a stick. ‘Not pottery,’ he amended. He set it against the edge of the table and leaned his weight against it. It broke with a sharp crack. ‘More like stone.’ He looked up at Carter. ‘How did it get all these cracks?’ He pointed at the thin fractures that crazed the smooth black surface of the body." },
+    { "type": "paragraph", "content": "Nelly fell on it," Carter said. "It jumped out of a tree and started to climb all over her, cutting her up with its feet. It moved so fast. I didn’t even know what was going on." Carter finally sank into the chair at Graham’s urging. "She got tangled in her harness and fell on it, broke some of its legs. Then it came after me, got on me, crawling all over." He crossed his arms in front of his bloody chest and shuddered. "I managed to get it off me and stomped it hard as I could. Then it got on me again…." He trailed off, his face ashen." },
+    { "type": "paragraph", "content": "The innkeeper nodded to himself as he continued to prod the thing. ‘There’s no blood. No organs. It’s just grey inside.’ He poked it with a finger. ‘Like a mushroom.’" },
+    { "type": "paragraph", "content": "Great Tehlu, just leave it alone," the smith’s prentice" }
+  ]
+}

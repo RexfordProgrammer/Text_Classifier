@@ -1,0 +1,19 @@
+
+{
+  "blocks": [
+    { "type": "header", "content": "CHAPTER ONE:" },
+    { "type": "paragraph", "content": "Kote suggested. \""All but this one.\"" },
+    { "type": "paragraph", "content": "\"It’s possible,\" Bast admitted reluctantly." },
+    { "type": "paragraph", "content": "\"Maybe it was that storm from a couple days back,\" Kote pointed out. \"A real wagon-tipper, as we used to say back in the troupe. All the wind and rain might have scattered one loose from the pack.\"" },
+    { "type": "paragraph", "content": "\"I like your first idea better, Reshi,\" Bast said uncomfortably. \""Three or four scrael would go through this town like…like…\"" },
+    { "type": "paragraph", "content": "\"Like a hot knife through butter?\"" },
+    { "type": "paragraph", "content": "\"More like several hot knives through several dozen farmers,\" Bast said dryly. \"These people can’t defend themselves. I bet there aren’t six swords in this whole town. Not that swords would do much good against the scrael.\"" },
+    { "type": "paragraph", "content": "There was a long moment of thoughtful silence. After a moment Bast began to fidget. \"Any news?\"" },
+    { "type": "paragraph", "content": "Kote shook his head. \"They didn’t get to the news tonight. Carter disrupted things while they were still telling stories. That’s something, I suppose. They’ll be back tomorrow night. It’ll give me something to do.\"" },
+    { "type": "paragraph", "content": "Kote poked his spoon idly into the stew. \"I should have bought the scraeling from Carter,\" he mused. \"He could’ve used the money for a new horse. People would have come from all over to see it. We could have had some business for a change.\"" },
+    { "type": "paragraph", "content": "Bast gave him a speechless, horrified look." },
+    { "type": "paragraph", "content": "Kote made a pacifying gesture with the hand that held the spoon. \"I’m joking, Bast.\"" },
+    { "type": "paragraph", "content": "He gave a weak smile. \"Still, it would have been nice.\"" },
+    { "type": "paragraph", "content": "\"No Reshi, it most certainly would not have been nice,\" Bast said emphatically. \"‘People would have come from all over to see it,’\" he repeated derisively. \"Indeed.\"" }
+  ]
+}

@@ -9,7 +9,6 @@ from string import Template
 
 from mistral.mistral_interface import load_mistral, generate_text
 
-# ---------- CONFIG ----------
 MISTRAL_MODELS_PATH = Path(os.environ.get("MISTRAL_MODELS_PATH", "/home/rexford/models/Mistral-7B-Instruct-v0.3"))
 INPUT_FILE = Path(os.environ.get("INPUT_FILE", "nameofthewind.txt"))
 DB_FILE = Path(os.environ.get("DB_FILE", "paragraphs_mistral.db"))
@@ -23,7 +22,6 @@ SAVE_FAILED_DIR.mkdir(exist_ok=True)
 
 VERBOSE = True
 
-# prompt template (use Template to safely inject chunk)
 PROMPT_TEMPLATE = Template("""You are a strict text normalizer.
 Output ONLY valid JSON (no prose, no explanation) following this exact schema:
 
@@ -41,7 +39,6 @@ Now normalize this text and output valid JSON only:
 
 """ + '"""' + "${chunk}" + '"""')
 
-# ----------------- helpers -----------------
 def info(*args, **kwargs):
     if VERBOSE:
         print(*args, **kwargs, flush=True)
@@ -93,7 +90,6 @@ def find_in_full_text(content: str, full_text: str, cursor_pos: int) -> int:
         suffix_norm = normalize_for_search(full_text[cursor_pos:])
         pos_norm = suffix_norm.find(norm_content)
         if pos_norm != -1:
-            # approximate mapping: try to locate first few chars
             probe = norm_content[:120]
             if probe:
                 m = re.search(re.escape(probe), full_text[cursor_pos:], flags=re.IGNORECASE)
@@ -113,7 +109,6 @@ def db_has_paragraph(cur, content: str) -> bool:
     cur.execute("SELECT 1 FROM paragraphs WHERE content = ? LIMIT 1", (content,))
     return cur.fetchone() is not None
 
-# ----------------- main -----------------
 def main():
     info("[info] loading model/tokenizer from:", MISTRAL_MODELS_PATH)
     tokenizer, model, eos_id = load_mistral(MISTRAL_MODELS_PATH)
