@@ -1,0 +1,4 @@
+Normalized curly quotes to ASCII quotes.
+Escaped inner quote in "content" at approx index 127
+Escaped inner quote in "content" at approx index 594
+[done] JSON parsed successfully after repair.
