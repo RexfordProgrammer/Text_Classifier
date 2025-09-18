@@ -1,20 +1,19 @@
 import os
 import re
-import json
 import time
 import traceback
 import sqlite3
 from pathlib import Path
 from string import Template
 from json_helpers import json_cleaner
+from json_helpers import extract_json
 from mistral.mistral_interface import load_mistral, generate_text
 
-MISTRAL_MODELS_PATH = Path(os.environ.get("MISTRAL_MODELS_PATH", "/home/rexford/models/Mistral-7B-Instruct-v0.3"))
 INPUT_FILE = Path(os.environ.get("INPUT_FILE", "nameofthewind.txt"))
 DB_FILE = Path(os.environ.get("DB_FILE", "paragraphs_mistral.db"))
 
 WINDOW_SIZE = int(os.environ.get("WINDOW_SIZE", 1600))
-OVERLAP = int(os.environ.get("OVERLAP", 300))
+OVERLAP = int(os.environ.get("OVERLAP", 0))
 MAX_RETRIES = int(os.environ.get("MAX_RETRIES", 2))
 TEMPERATURE = float(os.environ.get("TEMPERATURE", 0.0))
 SAVE_FAILED_DIR = Path(os.environ.get("SAVE_FAILED_DIR", "failed_chunks"))
@@ -49,26 +48,7 @@ def safe_save_failed(raw: str, chunk_num: int):
         fh.write(raw)
     return fname
 
-def extract_first_json_with_key(text: str, required_key="blocks"):
-    starts = [m.start() for m in re.finditer(r"\{", text)]
-    for start in starts:
-        depth = 0
-        for i in range(start, len(text)):
-            c = text[i]
-            if c == "{":
-                depth += 1
-            elif c == "}":
-                depth -= 1
-                if depth == 0:
-                    candidate = text[start:i+1]
-                    try:
-                        obj = json.loads(candidate)
-                        if required_key is None or required_key in obj:
-                            return obj
-                    except json.JSONDecodeError:
-                        pass
-                    break
-    return None
+
 
 def normalize_for_search(s: str) -> str:
     if not s:
@@ -110,8 +90,8 @@ def db_has_paragraph(cur, content: str) -> bool:
     return cur.fetchone() is not None
 
 def main():
-    info("[info] loading model/tokenizer from:", MISTRAL_MODELS_PATH)
-    tokenizer, model, eos_id = load_mistral(MISTRAL_MODELS_PATH)
+    info("[info] loading model/tokenizer")
+    tokenizer, model, eos_id = load_mistral()
     info("[info] model loaded. eos_id:", eos_id)
 
     # DB init
@@ -166,7 +146,7 @@ def main():
                 ##Cleaning chunk
                 raw_out = json_cleaner.normalize_quotes(raw_out)
                 info(f"[chunk {chunk_num}] raw preview:\n{raw_out[:800].replace(chr(10), ' ')}\n")
-                parsed = extract_first_json_with_key(raw_out, required_key="blocks")
+                parsed = extract_json.extract_first_json_with_key(raw_out, required_key="blocks")
                 if parsed is not None:
                     break
                 else:

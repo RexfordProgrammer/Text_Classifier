@@ -17,7 +17,9 @@ from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from mistral_common.protocol.instruct.messages import UserMessage
 from mistral_common.protocol.instruct.request import ChatCompletionRequest
 
-def find_tokenizer_file(model_path: Path):
+model_path = "/home/rexford/models/Mistral-7B-Instruct-v0.3"
+
+def find_tokenizer_file():
     for name in ("tokenizer.model.v3", "tokenizer.model.v2", "tokenizer.model", "tokenizer.json"):
         p = model_path / name
         if p.exists():
@@ -27,7 +29,7 @@ def find_tokenizer_file(model_path: Path):
             return p
     return None
 
-def load_mistral(model_path):
+def load_mistral():
     """
     Load tokenizer and model from model_path (Path or str).
     Returns: (tokenizer, model, eos_id)
