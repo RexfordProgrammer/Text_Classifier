@@ -1,0 +1,21 @@
+{
+  "blocks": [
+    { "type": "header", "content": "A Sea of Stars" },
+    { "type": "header", "content": "CHAPTER THIRTY-FOUR: Yet to Learn" },
+    { "type": "header", "content": "CHAPTER THIRTY-FIVE: A Parting of Ways" },
+    { "type": "header", "content": "CHAPTER THIRTY-SIX: Less Talents" },
+    { "type": "header", "content": "CHAPTER THIRTY-SEVEN: Bright-Eyed" },
+    { "type": "header", "content": "CHAPTER THIRTY-EIGHT: Sympathy in the Mains" },
+    { "type": "header", "content": "CHAPTER THIRTY-NINE: Enough Rope" },
+    { "type": "header", "content": "CHAPTER FORTY: On the Horns" },
+    { "type": "header", "content": "CHAPTER FORTY-ONE: Friend’s Blood" },
+    { "type": "header", "content": "CHAPTER FORTY-TWO: Bloodless" },
+    { "type": "header", "content": "CHAPTER FORTY-THREE: The Flickering Way" },
+    { "type": "header", "content": "CHAPTER FORTY-FOUR: The Burning Glass" },
+    { "type": "header", "content": "CHAPTER FORTY-FIVE: Interlude—Some Tavern Tale" },
+    { "type": "header", "content": "CHAPTER FORTY-SIX: The Ever-Changing Wind" },
+    { "type": "header", "content": "CHAPTER FORTY-SEVEN: Barbs" },
+    { "type": "header", "content": "CHAPTER FORTY-EIGHT: Interlude—A Silence of a Different Kind" },
+    { "type": "header", "content": "CHAPTER FORTY-NINE: The Nature of Wild Things" },
+    { "type": "header", "content": "CHAPTER FIFTY: Negotiations" },
+    { "type": "header", "
