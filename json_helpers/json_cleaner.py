@@ -3,6 +3,9 @@ import json
 from pathlib import Path
 from typing import Tuple, List
 
+# clean_json_file("json_helpers/local.json","json_helpers/cleaned_local.json", "log.txt")
+# normalize_quotes(raw) output is cleaned json
+
 SMART_TO_STRAIGHT = {
     "\u2018": "'",  # ‘
     "\u2019": "'",  # ’

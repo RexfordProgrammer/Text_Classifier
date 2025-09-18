@@ -6,7 +6,7 @@ import traceback
 import sqlite3
 from pathlib import Path
 from string import Template
-
+from json_helpers import json_cleaner
 from mistral.mistral_interface import load_mistral, generate_text
 
 MISTRAL_MODELS_PATH = Path(os.environ.get("MISTRAL_MODELS_PATH", "/home/rexford/models/Mistral-7B-Instruct-v0.3"))
@@ -162,6 +162,9 @@ def main():
             try:
                 info(f"[chunk {chunk_num}] generating (attempt {attempt}) prompt len={len(prompt)}")
                 raw_out = generate_text(tokenizer, model, eos_id, prompt, temperature=TEMPERATURE)
+                info(f"[chunk {chunk_num}] generating (attempt {attempt}) prompt len={len(prompt)}")
+                ##Cleaning chunk
+                raw_out = json_cleaner.normalize_quotes(raw_out)
                 info(f"[chunk {chunk_num}] raw preview:\n{raw_out[:800].replace(chr(10), ' ')}\n")
                 parsed = extract_first_json_with_key(raw_out, required_key="blocks")
                 if parsed is not None:
