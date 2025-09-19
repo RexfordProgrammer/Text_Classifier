@@ -1,0 +1,78 @@
+Return ONLY one valid JSON object in this form:
+
+{ "type": "header"|"paragraph", "content": "..." }
+
+Rules:
+- Output exactly ONE logical block (the first complete block in the text).
+- Titles/headings = "header".
+- Paragraphs, lists, and publisher/legal info = "paragraph".
+- Group related lines together into one block; ignore raw line breaks.
+- Collapse extra whitespace into single spaces.
+
+Text:
+
+"""
+THE KINGKILLER CHRONICLE DAY ONE
+PATRICK ROTHFUSS
+
+DAW BOOKS, INC.
+DONALD A. WOLLHEIM, FOUNDER
+375 Hudson Street, New York, NY 10014
+ELIZABETH R. WOLLHEIM
+SHEILA E. GILBERT
+PUBLISHERS
+http://www.dawbooks.com
+Copyright © 2007 by Patrick Rothfuss
+All rights reserved.
+Jacket art by Donato.
+DAW Books Collectors No. 1396.
+DAW Books are distributed by Penguin Group (USA) Inc.
+Maps by Nathan Taylor www.king-sheep.com
+All characters and events in this book are fictitious.
+All resemblance to persons living or dead is coincidental.
+ISBN: 9781101147160
+The scanning, uploading and distribution of this book via the Internet or any other means without the permission of the publisher is illegal, and punishable by law. Please purchase only authorized electronic editions, and do not participate in or encourage the electronic piracy of copyrighted materials. Your support of the author’s rights is appreciated.
+
+    
+
+DAW TRADEMARK REGISTERED
+U.S. PAT. OFF. AND FOREIGN COUNTRIES
+—MARCA REGISTRADA
+HECHO EN U.S.A.
+
+Version_9
+To my mother, who taught me to love books and opened the door to Narnia, Pern, and Middle Earth.
+And to my father, who taught me that if I was going to do something, I should take my time and do it right.
+Contents
+
+ACKNOWLEDGMENTS
+
+PROLOGUE
+A Silence of Three Parts
+
+CHAPTER ONE
+A Place for Demons
+
+CHAPTER TWO
+A Beautiful Day
+
+CHAPTER THREE
+Wood and Word
+
+CHAPTER FOUR
+Halfway to Newarre
+
+CHAPTER FIVE
+Notes
+
+CHAPTER SIX
+The Price of Remembering
+
+CHAPTER SEVEN
+Of Beginnings and the Names of Things
+
+CHAPTER EIGHT
+Thieves, Heretics, and Whores
+
+CHAPTER NINE
+Riding in the Wagon w"""

@@ -1,0 +1,140 @@
+Return ONLY one valid JSON object in this form:
+
+{ "type": "header"|"paragraph", "content": "..." }
+
+Rules:
+- Output exactly ONE logical block (the first complete block in the text).
+- Titles/headings = "header".
+- Paragraphs, lists, and publisher/legal info = "paragraph".
+- Group related lines together into one block; ignore raw line breaks.
+- Collapse extra whitespace into single spaces.
+
+Text:
+
+"""
+A Silence of Three Parts
+
+CHAPTER ONE
+A Place for Demons
+
+CHAPTER TWO
+A Beautiful Day
+
+CHAPTER THREE
+Wood and Word
+
+CHAPTER FOUR
+Halfway to Newarre
+
+CHAPTER FIVE
+Notes
+
+CHAPTER SIX
+The Price of Remembering
+
+CHAPTER SEVEN
+Of Beginnings and the Names of Things
+
+CHAPTER EIGHT
+Thieves, Heretics, and Whores
+
+CHAPTER NINE
+Riding in the Wagon with Ben
+
+CHAPTER TEN
+Alar and Several Stones
+
+CHAPTER ELEVEN
+The Binding of Iron
+
+CHAPTER TWELVE
+Puzzle Pieces Fitting
+
+CHAPTER THIRTEEN
+Interlude—Flesh with Blood Beneath
+
+CHAPTER FOURTEEN
+The Name of the Wind
+
+CHAPTER FIFTEEN
+Distractions and Farewells
+
+CHAPTER SIXTEEN
+Hope
+
+CHAPTER SEVENTEEN
+Interlude—Autumn
+
+CHAPTER EIGHTEEN
+Roads to Safe Places
+
+CHAPTER NINETEEN
+Fingers and Strings
+
+CHAPTER TWENTY
+Bloody Hands Into Stinging Fists
+
+CHAPTER TWENTY-ONE
+Basement, Bread and Bucket
+
+CHAPTER TWENTY-TWO
+A Time for Demons
+
+CHAPTER TWENTY-THREE
+The Burning Wheel
+
+CHAPTER TWENTY-FOUR
+Shadows Themselves
+
+CHAPTER TWENTY-FIVE
+Interlude—Eager for Reasons
+
+CHAPTER TWENTY-SIX
+Lanre Turned
+
+CHAPTER TWENTY-SEVEN
+His Eyes Unveiled
+
+CHAPTER TWENTY-EIGHT
+Tehlu’s Watchful Eye
+
+CHAPTER TWENTY-NINE
+The Doors of My Mind
+
+CHAPTER THIRTY
+The Broken Binding
+
+CHAPTER THIRTY-ONE
+The Nature of Nobility
+
+CHAPTER THIRTY-TWO
+Coppers, Cobblers and Crowds
+
+CHAPTER THIRTY-THREE
+A Sea of Stars
+
+CHAPTER THIRTY-FOUR
+Yet to Learn
+
+CHAPTER THIRTY-FIVE
+A Parting of Ways
+
+CHAPTER THIRTY-SIX
+Less Talents
+
+CHAPTER THIRTY-SEVEN
+Bright-Eyed
+
+CHAPTER THIRTY-EIGHT
+Sympathy in the Mains
+
+CHAPTER THIRTY-NINE
+Enough Rope
+
+CHAPTER FORTY
+On the Horns
+
+CHAPTER FORTY-ONE
+Friend’s Blood
+
+CHAPT"""

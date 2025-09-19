@@ -1,54 +1,67 @@
 import os
 import re
 import time
+import json
 import traceback
-import sqlite3
 from pathlib import Path
 from string import Template
+
+import db.db_tools as db
 from json_helpers import json_cleaner
-from json_helpers import extract_json
 from mistral.mistral_interface import load_mistral, generate_text
+from context_calc.context_slider import strip_consumed  # fuzzy strip helper
 
 INPUT_FILE = Path(os.environ.get("INPUT_FILE", "nameofthewind.txt"))
 DB_FILE = Path(os.environ.get("DB_FILE", "paragraphs_mistral.db"))
 
 WINDOW_SIZE = int(os.environ.get("WINDOW_SIZE", 1600))
-OVERLAP = int(os.environ.get("OVERLAP", 0))
 MAX_RETRIES = int(os.environ.get("MAX_RETRIES", 2))
 TEMPERATURE = float(os.environ.get("TEMPERATURE", 0.0))
+
 SAVE_FAILED_DIR = Path(os.environ.get("SAVE_FAILED_DIR", "failed_chunks"))
 SAVE_FAILED_DIR.mkdir(exist_ok=True)
 
+HISTORY_LOC = Path(os.environ.get("HISTORY_LOC", "history_loc"))
+HISTORY_LOC.mkdir(exist_ok=True)
+
 VERBOSE = True
 
-PROMPT_TEMPLATE = Template("""You are a strict text normalizer.
-Output ONLY valid JSON (no prose, no explanation) following this exact schema:
+PROMPT_TEMPLATE = Template("""Return ONLY one valid JSON object in this form:
 
-{
-  "blocks": [
-    { "type": "header", "content": "CHAPTER ONE: Title" },
-    { "type": "paragraph", "content": "First paragraph text..." }
-  ]
-}
+{ "type": "header"|"paragraph", "content": "..." }
 
-When given raw text, split it into logical blocks (header or paragraph) and return a single JSON
-object containing "blocks" (an array). Each block must be {"type": "header"|"paragraph", "content": "..." }.
+Rules:
+- Output exactly ONE logical block (the first complete block in the text).
+- Titles/headings = "header".
+- Paragraphs, lists, and publisher/legal info = "paragraph".
+- Group related lines together into one block; ignore raw line breaks.
+- Collapse extra whitespace into single spaces.
 
-Now normalize this text and output valid JSON only:
+Text:
 
 """ + '"""' + "${chunk}" + '"""')
+
 
 def info(*args, **kwargs):
     if VERBOSE:
         print(*args, **kwargs, flush=True)
 
-def safe_save_failed(raw: str, chunk_num: int):
+def save_raw_output(raw: str, chunk_num: int, suffix: str = "raw", prompt: str = None) -> Path:
+    ts = int(time.time())
+    raw_fname = HISTORY_LOC / f"chunk_{chunk_num}_{suffix}_{ts}.txt"
+    with open(raw_fname, "w", encoding="utf-8") as fh:
+        fh.write(raw)
+    if prompt is not None:
+        prompt_fname = HISTORY_LOC / f"chunk_{chunk_num}_{suffix}_prompt_{ts}.txt"
+        with open(prompt_fname, "w", encoding="utf-8") as fh:
+            fh.write(prompt)
+    return raw_fname
+
+def safe_save_failed(raw: str, chunk_num: int) -> Path:
     fname = SAVE_FAILED_DIR / f"failed_chunk_{chunk_num}_{int(time.time())}.txt"
     with open(fname, "w", encoding="utf-8") as fh:
         fh.write(raw)
     return fname
-
-
 
 def normalize_for_search(s: str) -> str:
     if not s:
@@ -58,81 +71,66 @@ def normalize_for_search(s: str) -> str:
     s = re.sub(r"\s+", " ", s)
     return s.strip()
 
-def find_in_full_text(content: str, full_text: str, cursor_pos: int) -> int:
-    if not content:
-        return -1
-    idx = full_text.find(content, cursor_pos)
-    if idx != -1:
-        return idx + len(content)
-    # normalized
-    norm_content = normalize_for_search(content)
-    if norm_content:
-        suffix_norm = normalize_for_search(full_text[cursor_pos:])
-        pos_norm = suffix_norm.find(norm_content)
-        if pos_norm != -1:
-            probe = norm_content[:120]
-            if probe:
-                m = re.search(re.escape(probe), full_text[cursor_pos:], flags=re.IGNORECASE)
-                if m:
-                    return cursor_pos + m.start() + len(probe)
-            return cursor_pos + pos_norm + len(norm_content)
-    for L in (120, 80, 60, 40, 20):
-        pref = content[:L].strip()
-        if not pref:
-            continue
-        idx = full_text.find(pref, cursor_pos)
-        if idx != -1:
-            return idx + len(pref)
-    return -1
+def parse_single_json(s: str):
+    """Extract and parse the first JSON object from a string."""
+    # fast path
+    try:
+        return json.loads(s)
+    except Exception:
+        pass
+    # cleaned quotes
+    try:
+        cleaned = json_cleaner.normalize_quotes(s)
+        return json.loads(cleaned)
+    except Exception:
+        pass
+    # minimal brace capture
+    m = re.search(r'\{.*?\}', s, flags=re.DOTALL)
+    if m:
+        blob = m.group(0)
+        for candidate in (blob, json_cleaner.normalize_quotes(blob)):
+            try:
+                return json.loads(candidate)
+            except Exception:
+                continue
+    return None
 
-def db_has_paragraph(cur, content: str) -> bool:
-    cur.execute("SELECT 1 FROM paragraphs WHERE content = ? LIMIT 1", (content,))
-    return cur.fetchone() is not None
+# ---- single-table chapter/block counters ----
+current_chapter_num = 0                 # 0 = prologue until first header
+chapter_block_counter = {}              # chapter_num -> next block_num
+
+def next_block_num(ch: int) -> int:
+    n = chapter_block_counter.get(ch, 1)
+    chapter_block_counter[ch] = n + 1
+    return n
 
 def main():
+    # DB init
+    db.set_db_file(str(DB_FILE))
+    db.init()
+
+    if not INPUT_FILE.exists():
+        raise FileNotFoundError(f"Input file not found: {INPUT_FILE}")
+
     info("[info] loading model/tokenizer")
     tokenizer, model, eos_id = load_mistral()
     info("[info] model loaded. eos_id:", eos_id)
 
-    # DB init
-    conn = sqlite3.connect(DB_FILE)
-    cur = conn.cursor()
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS chapters (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        chapter_num INTEGER,
-        header TEXT
-    )
-    """)
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS paragraphs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        chapter_id INTEGER,
-        paragraph_num INTEGER,
-        content TEXT,
-        FOREIGN KEY(chapter_id) REFERENCES chapters(id)
-    )
-    """)
-    conn.commit()
-
-    if not INPUT_FILE.exists():
-        raise FileNotFoundError(f"Input file not found: {INPUT_FILE}")
     full_text = INPUT_FILE.read_text(encoding="utf-8")
-    # small cleanup
+    # join hyphen-split words and normalize newlines
     full_text = re.sub(r"(\w+)-\n(\w+)", r"\1\2", full_text)
-    full_text = re.sub(r"\r\n", "\n", full_text)
+    full_text = full_text.replace("\r\n", "\n")
 
-    total_len = len(full_text)
-    info(f"[info] input length {total_len} chars")
+    info(f"[info] input length {len(full_text)} chars")
 
-    cursor = 0
     chunk_num = 1
-    chapter_counter = 0
-    current_chapter_id = None
-    paragraph_counters = {}
 
-    while cursor < len(full_text):
-        window = full_text[cursor: cursor + WINDOW_SIZE]
+    # Consume from the front until empty
+    while len(full_text) > 0:
+        window = full_text[:WINDOW_SIZE]
+        if not window.strip():
+            break
+
         prompt = PROMPT_TEMPLATE.safe_substitute(chunk=window)
 
         parsed = None
@@ -142,126 +140,66 @@ def main():
             try:
                 info(f"[chunk {chunk_num}] generating (attempt {attempt}) prompt len={len(prompt)}")
                 raw_out = generate_text(tokenizer, model, eos_id, prompt, temperature=TEMPERATURE)
-                info(f"[chunk {chunk_num}] generating (attempt {attempt}) prompt len={len(prompt)}")
-                ##Cleaning chunk
-                raw_out = json_cleaner.normalize_quotes(raw_out)
                 info(f"[chunk {chunk_num}] raw preview:\n{raw_out[:800].replace(chr(10), ' ')}\n")
-                parsed = extract_json.extract_first_json_with_key(raw_out, required_key="blocks")
-                if parsed is not None:
+
+                # Save raw + prompt
+                save_raw_output(raw_out, chunk_num, suffix=f"attempt{attempt}", prompt=prompt)
+
+                parsed = parse_single_json(raw_out)
+                if isinstance(parsed, dict) and "content" in parsed:
                     break
-                else:
-                    info(f"[warn] JSON extraction failed for chunk {chunk_num} attempt {attempt}")
-                    fname = safe_save_failed(raw_out, chunk_num)
-                    info("[debug] saved failed raw to", fname)
+
+                time.sleep(0.1)  # tiny backoff between retries
+
             except Exception as e:
                 info(f"[error] generation exception on chunk {chunk_num}: {e}")
                 traceback.print_exc()
-                fname = safe_save_failed(f"EXC:{e}\n{traceback.format_exc()}", chunk_num)
-                info("[debug] saved exception to", fname)
-            time.sleep(0.25)
+                save_raw_output(f"EXC:{e}\n{traceback.format_exc()}", chunk_num, suffix="exception", prompt=prompt)
 
-        if parsed is None:
-            info(f"[x] skipping chunk {chunk_num} — no valid JSON")
-            cursor += max(1, WINDOW_SIZE - OVERLAP)
+        if not (isinstance(parsed, dict) and "content" in parsed):
+            info(f"[x] skipping chunk {chunk_num} — no valid JSON object")
+            # Safety advance to avoid infinite loop
+            full_text = full_text[WINDOW_SIZE // 2 :]
             chunk_num += 1
             continue
 
-        blocks = parsed.get("blocks", [])
-        if not isinstance(blocks, list):
-            info(f"[warn] 'blocks' not a list; skipping chunk {chunk_num}")
-            cursor += max(1, WINDOW_SIZE - OVERLAP)
+        btype = (parsed.get("type") or "").lower()
+        content = (parsed.get("content") or "").strip()
+
+        if not content:
+            info(f"[x] empty content; skipping chunk {chunk_num}")
+            full_text = full_text[WINDOW_SIZE // 2 :]
             chunk_num += 1
             continue
 
-        used_advance = 0
-        made_progress = False
+        # ---------- DB persistence (single-table) ----------
+        global current_chapter_num
 
-        for block in blocks:
-            btype = (block.get("type") or "").lower()
-            content = (block.get("content") or "").strip()
-            if not content:
-                continue
+        if btype == "header":
+            current_chapter_num += 1
+            db.insert_block(current_chapter_num, next_block_num(current_chapter_num), "header", content)
+            info(f"[+] Chapter {current_chapter_num}: {content[:120]}")
 
-            if btype == "paragraph" and db_has_paragraph(cur, content):
-                info("[skip] paragraph already exists in DB (dedupe)")
-                adv = find_in_full_text(content, full_text, cursor)
-                if adv != -1:
-                    used_advance = max(used_advance, adv - cursor)
-                    made_progress = True
-                continue
-
-            if btype == "header":
-                chapter_counter += 1
-                cur.execute("INSERT INTO chapters (chapter_num, header) VALUES (?, ?)", (chapter_counter, content))
-                conn.commit()
-                current_chapter_id = cur.lastrowid
-                paragraph_counters[current_chapter_id] = 1
-                info(f"[+] Chapter {chapter_counter}: {content}")
-
-            elif btype == "paragraph":
-                if current_chapter_id is None:
-                    chapter_counter += 1
-                    cur.execute("INSERT INTO chapters (chapter_num, header) VALUES (?, ?)", (0, "Prologue/Intro"))
-                    conn.commit()
-                    current_chapter_id = cur.lastrowid
-                    paragraph_counters[current_chapter_id] = 1
-                    info(f"[!] Inserted Prologue/Intro as chapter_id={current_chapter_id}")
-
-                pnum = paragraph_counters[current_chapter_id]
-                cur.execute(
-                    "INSERT INTO paragraphs (chapter_id, paragraph_num, content) VALUES (?, ?, ?)",
-                    (current_chapter_id, pnum, content)
-                )
-                conn.commit()
-                paragraph_counters[current_chapter_id] += 1
-                info(f"[✓] Saved paragraph {pnum} (chapter_id={current_chapter_id}): {content[:120]}...")
-
-            else:
-                # fallback as paragraph
-                if current_chapter_id is None:
-                    chapter_counter += 1
-                    cur.execute("INSERT INTO chapters (chapter_num, header) VALUES (?, ?)", (0, "Prologue/Intro"))
-                    conn.commit()
-                    current_chapter_id = cur.lastrowid
-                    paragraph_counters[current_chapter_id] = 1
-                pnum = paragraph_counters[current_chapter_id]
-                cur.execute("INSERT INTO paragraphs (chapter_id, paragraph_num, content) VALUES (?, ?, ?)",
-                            (current_chapter_id, pnum, content))
-                conn.commit()
-                paragraph_counters[current_chapter_id] += 1
-                info(f"[?] Saved unknown block as paragraph {pnum} (chapter_id={current_chapter_id})")
-
-            adv_pos = find_in_full_text(content, full_text, cursor)
-            if adv_pos != -1:
-                used_advance = max(used_advance, adv_pos - cursor)
-                made_progress = True
-            else:
-                if content in full_text:
-                    info("[fixup] content appears earlier/later in text; removing first occurrence to avoid loop")
-                    full_text = full_text.replace(content, "", 1)
-                    made_progress = True
-                else:
-                    fallback = max(len(content), WINDOW_SIZE - OVERLAP)
-                    used_advance = max(used_advance, fallback)
-                    made_progress = True
-
-        if made_progress and used_advance and used_advance > 10:
-            cursor += used_advance
-            info(f"[info] advanced cursor by matched content: {used_advance} -> cursor={cursor}")
         else:
-            step = max(1, WINDOW_SIZE - OVERLAP)
-            cursor += step
-            info(f"[info] advanced cursor by default step: {step} -> cursor={cursor}")
+            # ensure we have a chapter (use 0 until first header)
+            if current_chapter_num not in chapter_block_counter:
+                chapter_block_counter[current_chapter_num] = 1
+                # optional: create a synthetic prologue header once
+                # db.insert_block(0, next_block_num(0), "header", "Prologue/Intro")
 
-        if cursor < 0:
-            cursor = 0
-        if cursor > len(full_text):
-            cursor = len(full_text)
+            # optional dedupe
+            if btype == "paragraph" and db.has_block(content):
+                info("[skip] paragraph already exists in DB (dedupe)")
+            else:
+                db.insert_block(current_chapter_num, next_block_num(current_chapter_num), "paragraph", content)
+                info(f"[✓] Saved paragraph (chapter={current_chapter_num}): {content[:120]}...")
+
+        # ---------- advance input by consumed content ----------
+        full_text = strip_consumed(full_text, content)
 
         chunk_num += 1
 
     info("[Done] processing complete.")
-    conn.close()
 
 if __name__ == "__main__":
     main()
